@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Message Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    textarea, input, select, button {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Admin Login</h2>
+  <input id="username" placeholder="Username" />
+  <input id="password" type="password" placeholder="Password" />
+  <button onclick="login()">Login</button>
+
+  <div id="panel" style="display:none">
+    <h2>Send Message</h2>
+    <textarea id="messageText" placeholder="Type your message here..."></textarea>
+
+    <select id="messageType" onchange="toggleUserField()">
+      <option value="all">Send to All Users</option>
+      <option value="user">Send to Specific User</option>
+    </select>
+
+    <div id="userField" style="display: none;">
+      <input id="userId" placeholder="Enter User ID" />
+    </div>
+
+    <button onclick="sendMessage()">Send Message</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBpO3VLOMNh_ctBC71ZMShQvlOyu2uM5cs",
+      authDomain: "cookie-bebb2.firebaseapp.com",
+      projectId: "cookie-bebb2",
+      storageBucket: "cookie-bebb2.firebasestorage.app",
+      messagingSenderId: "268231772170",
+      appId: "1:268231772170:web:d6452769674377d12eb7f3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const adminUser = "admin";
+    const adminPass = "12345";
+
+    window.login = function() {
+      const u = document.getElementById('username').value;
+      const p = document.getElementById('password').value;
+      if (u === adminUser && p === adminPass) {
+        document.getElementById('panel').style.display = 'block';
+        document.getElementById('username').style.display = 'none';
+        document.getElementById('password').style.display = 'none';
+        event.target.style.display = 'none';
+      } else {
+        alert("Wrong credentials");
+      }
+    }
+
+    window.toggleUserField = function () {
+      const type = document.getElementById('messageType').value;
+      document.getElementById('userField').style.display = type === 'user' ? 'block' : 'none';
+    }
+
+    window.sendMessage = async function () {
+      const message = document.getElementById('messageText').value;
+      const type = document.getElementById('messageType').value;
+      const timestamp = new Date().toISOString();
+      const dateId = timestamp.split('T')[0];
+
+      if (type === 'all') {
+        await setDoc(doc(db, 'broadcastMessages', dateId), {
+          content: message,
+          timestamp: timestamp
+        });
+        alert('Message sent to all users!');
+      } else {
+        const userId = document.getElementById('userId').value;
+        if (!userId) return alert('Enter User ID!');
+
+        await setDoc(doc(db, 'userMessages', userId, 'messages', dateId), {
+          content: message,
+          timestamp: timestamp,
+          read: false
+        });
+        alert(`Message sent to user: ${userId}`);
+      }
+
+      document.getElementById('messageText').value = '';
+      document.getElementById('userId').value = '';
+    }
+  </script>
+</body>
+</html>
